@@ -26,7 +26,7 @@ func (g *Gemini) Summarize(ctx context.Context, ip string, results []models.Enri
 	}
 	base := g.baseURL
 	if base == "" {
-		base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+		base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
 	}
 	timeout := g.timeout
 	if timeout == 0 {
