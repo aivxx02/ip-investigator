@@ -26,7 +26,7 @@ go test ./report/...
 # Test a single test function
 go test ./enrichers/ -run TestIPInfo_Success -v
 
-# Tidy modules (run after all packages are implemented)
+# Tidy modules
 go mod tidy
 ```
 
@@ -45,15 +45,15 @@ main.go → config.Load() → enrichers.RunAll() → summary.Gemini.Summarize() 
 
 - `config/` — loads API keys from `.env` beside the binary via `godotenv`. `Load()` uses `os.Executable()` to find the binary directory. `LoadFrom(path)` is the testable variant used in tests.
 
-- `enrichers/` — one file per API source. All implement `Enricher` interface (`Name() string`, `Enrich(ctx, ip) EnrichResult`). `RunAll()` in `enricher.go` fans them out into goroutines and collects results in original order using index-based writes to a pre-allocated slice. Each enricher struct has unexported `baseURL` and `timeout` fields for test injection (no real HTTP calls in tests — use `httptest.NewServer`).
+- `enrichers/` — one file per API source. All implement `Enricher` interface (`Name() string`, `Enrich(ctx, ip) EnrichResult`). `RunAll()` in `enricher.go` fans them out into goroutines and collects results in original order using index-based writes to a pre-allocated slice. HTTP-based enrichers have unexported `baseURL` and `timeout` fields for test injection (use `httptest.NewServer` — no real HTTP calls in tests).
 
-- `summary/` — calls Gemini REST API directly (no SDK). Builds a structured prompt that includes each enricher's status icon so Gemini can acknowledge data gaps in its assessment.
+- `summary/` — calls Gemini REST API directly (`gemini-2.0-flash`, no SDK). Builds a structured prompt that includes each enricher's status icon so Gemini can acknowledge data gaps in its assessment.
 
 - `report/` — renders colored terminal output using `fatih/color`. Every section renders even if empty/errored — nothing is silently skipped.
 
 ## Enricher Pattern
 
-Every enricher follows the same structure:
+API-keyed enrichers (IPInfo, VirusTotal, GoogleTI, AbuseIPDB, GreyNoise, OTX, Shodan):
 ```go
 type ToolName struct {
     Key     string        // API key (empty = return StatusError immediately)
@@ -61,6 +61,10 @@ type ToolName struct {
     timeout time.Duration // default: 10s; override in tests
 }
 ```
+
+Keyless enrichers use injectable function fields instead:
+- `ReverseDNS{lookup func(ctx, addr) ([]string, error)}` — wraps `net.DefaultResolver.LookupAddr`
+- `WHOIS{query func(host) (string, error)}` — wraps `gowhois.Whois`
 
 Status codes returned:
 - `StatusOK` — data retrieved

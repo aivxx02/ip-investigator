@@ -1,3 +1,2 @@
 .env
-ip-investigator
-ip-investigator.exe
+*.exe
