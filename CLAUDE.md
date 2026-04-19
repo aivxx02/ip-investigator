@@ -74,7 +74,20 @@ Status codes returned:
 
 ## API Keys
 
-Copy `.env.example` → `.env` in the same directory as the binary. Keys read from environment variables (`VIRUSTOTAL_KEY`, `GOOGLE_TI_KEY`, `ABUSEIPDB_KEY`, `GREYNOISE_KEY`, `OTX_KEY`, `SHODAN_KEY`, `IPINFO_KEY`, `GEMINI_KEY`). Environment variables already set take precedence over `.env`.
+Create `.env` in the same directory as the binary. Keys read from environment variables (`VIRUSTOTAL_KEY`, `GOOGLE_TI_KEY`, `ABUSEIPDB_KEY`, `GREYNOISE_KEY`, `OTX_KEY`, `SHODAN_KEY`, `IPINFO_KEY`, `GEMINI_KEY`). Environment variables already set take precedence over `.env`.
+
+## Repository
+
+GitHub: https://github.com/aivxx02/ip-investigator.git
+
+`.gitignore` excludes `.env` and `*.exe` — never commit API keys.
+
+```bash
+# Git
+git add .
+git commit -m "message"
+git push
+```
 
 ## IDE Diagnostics
 
