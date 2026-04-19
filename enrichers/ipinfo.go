@@ -40,7 +40,7 @@ func (e *IPInfo) Enrich(ctx context.Context, ip string) models.EnrichResult {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return models.EnrichResult{Tool: e.Name(), Status: models.StatusError, Note: "request failed"}
+		return models.EnrichResult{Tool: e.Name(), Status: models.StatusError, Note: err.Error()}
 	}
 	defer resp.Body.Close()
 

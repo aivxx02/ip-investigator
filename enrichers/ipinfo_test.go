@@ -54,3 +54,20 @@ func TestIPInfo_Timeout(t *testing.T) {
 		t.Errorf("expected StatusError on timeout, got %v", result.Status)
 	}
 }
+
+func TestIPInfo_NoData(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{
+			"country": "",
+			"city":    "",
+			"org":     "",
+		})
+	}))
+	defer srv.Close()
+
+	e := &IPInfo{baseURL: srv.URL}
+	result := e.Enrich(context.Background(), "1.2.3.4")
+	if result.Status != models.StatusNoData {
+		t.Errorf("expected StatusNoData for empty country, got %v", result.Status)
+	}
+}
