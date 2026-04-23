@@ -3,6 +3,7 @@ package enrichers
 import (
 	"context"
 	"sync"
+	"time"
 
 	"ip-investigator/models"
 )
@@ -26,4 +27,24 @@ func RunAll(ctx context.Context, ip string, all []Enricher) []models.EnrichResul
 	}
 	wg.Wait()
 	return results
+}
+
+// RunAllLive runs all enrichers concurrently and sends each result to ch as it
+// completes. ch is closed when all enrichers finish. Each result has Index and
+// Elapsed set. RunAll is unchanged and used by existing tests.
+func RunAllLive(ctx context.Context, ip string, all []Enricher, ch chan<- models.EnrichResult) {
+	var wg sync.WaitGroup
+	for i, e := range all {
+		wg.Add(1)
+		go func(idx int, enr Enricher) {
+			defer wg.Done()
+			start := time.Now()
+			r := enr.Enrich(ctx, ip)
+			r.Index = idx
+			r.Elapsed = time.Since(start)
+			ch <- r
+		}(i, e)
+	}
+	wg.Wait()
+	close(ch)
 }

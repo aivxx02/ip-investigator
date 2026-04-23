@@ -49,3 +49,37 @@ func TestRunAll_RunsConcurrently(t *testing.T) {
 		t.Errorf("RunAll took %v — enrichers are not running concurrently", elapsed)
 	}
 }
+
+func TestRunAllLive(t *testing.T) {
+	tools := []Enricher{
+		&fakeEnricher{name: "A", delay: 10 * time.Millisecond, result: models.EnrichResult{Tool: "A", Status: models.StatusOK}},
+		&fakeEnricher{name: "B", delay: 30 * time.Millisecond, result: models.EnrichResult{Tool: "B", Status: models.StatusOK}},
+		&fakeEnricher{name: "C", delay: 5 * time.Millisecond, result: models.EnrichResult{Tool: "C", Status: models.StatusOK}},
+	}
+
+	ch := make(chan models.EnrichResult, len(tools))
+	ctx := context.Background()
+	go RunAllLive(ctx, "1.2.3.4", tools, ch)
+
+	var got []models.EnrichResult
+	for r := range ch {
+		got = append(got, r)
+	}
+
+	if len(got) != 3 {
+		t.Fatalf("expected 3 results, got %d", len(got))
+	}
+
+	seen := make(map[int]bool)
+	for _, r := range got {
+		seen[r.Index] = true
+		if r.Elapsed == 0 {
+			t.Errorf("tool %s has zero Elapsed", r.Tool)
+		}
+	}
+	for i := 0; i < 3; i++ {
+		if !seen[i] {
+			t.Errorf("missing Index %d in results", i)
+		}
+	}
+}
