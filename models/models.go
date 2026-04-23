@@ -1,6 +1,9 @@
 package models
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 // Status represents the outcome of an enricher call.
 type Status int
@@ -29,10 +32,12 @@ func (s Status) Icon() string {
 
 // EnrichResult is the generic wrapper returned by every enricher.
 type EnrichResult struct {
-	Tool   string
-	Status Status
-	Note   string // shown in status table when non-empty
-	Data   any    // cast to tool-specific struct in report renderer
+	Tool    string
+	Status  Status
+	Note    string        // shown in status table when non-empty
+	Data    any           // cast to tool-specific struct in report renderer
+	Index   int           // position in the original enricher slice
+	Elapsed time.Duration // time taken by this enricher
 }
 
 // --- Tool-specific result structs ---
