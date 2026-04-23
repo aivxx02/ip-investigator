@@ -17,7 +17,10 @@ type fakeEnricher struct {
 func (f *fakeEnricher) Name() string { return f.name }
 func (f *fakeEnricher) Enrich(ctx context.Context, ip string) models.EnrichResult {
 	if f.delay > 0 {
-		time.Sleep(f.delay)
+		select {
+		case <-time.After(f.delay):
+		case <-ctx.Done():
+		}
 	}
 	return f.result
 }
