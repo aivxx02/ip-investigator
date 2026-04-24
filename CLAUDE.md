@@ -32,11 +32,11 @@ go mod tidy
 
 ## Architecture
 
-The tool queries 9 threat-intel APIs concurrently and renders a colored terminal report with a Gemini AI summary.
+The tool queries 9 threat-intel APIs concurrently, renders a live per-tool progress ticker, then shows a colored terminal report with an optional OpenRouter AI summary.
 
 **Data flow:**
 ```
-main.go → config.Load() → enrichers.RunAll() → summary.Gemini.Summarize() → report.Render()
+main.go → config.Load() → enrichers.RunAllLive() → progress.Tracker → summary.OpenRouter.Summarize() → report.Render()
 ```
 
 **Package responsibilities:**
@@ -47,7 +47,7 @@ main.go → config.Load() → enrichers.RunAll() → summary.Gemini.Summarize() 
 
 - `enrichers/` — one file per API source. All implement `Enricher` interface (`Name() string`, `Enrich(ctx, ip) EnrichResult`). `RunAll()` in `enricher.go` fans them out into goroutines and collects results in original order using index-based writes to a pre-allocated slice. HTTP-based enrichers have unexported `baseURL` and `timeout` fields for test injection (use `httptest.NewServer` — no real HTTP calls in tests).
 
-- `summary/` — calls Gemini REST API directly (`gemini-2.0-flash`, no SDK). Builds a structured prompt that includes each enricher's status icon so Gemini can acknowledge data gaps in its assessment.
+- `summary/` — calls OpenRouter REST API (`openrouter.ai/api/v1/chat/completions`, no SDK). Builds a structured prompt that includes each enricher's status icon so the AI can acknowledge data gaps in its assessment. Model defaults to `google/gemma-2-9b-it:free`; override with `OPENROUTER_MODEL`.
 
 - `report/` — renders colored terminal output using `fatih/color`. Every section renders even if empty/errored — nothing is silently skipped.
 
@@ -74,7 +74,7 @@ Status codes returned:
 
 ## API Keys
 
-Create `.env` in the same directory as the binary. Keys read from environment variables (`VIRUSTOTAL_KEY`, `GOOGLE_TI_KEY`, `ABUSEIPDB_KEY`, `GREYNOISE_KEY`, `OTX_KEY`, `SHODAN_KEY`, `IPINFO_KEY`, `GEMINI_KEY`). Environment variables already set take precedence over `.env`.
+Create `.env` in the same directory as the binary. Keys read from environment variables (`VIRUSTOTAL_KEY`, `GOOGLE_TI_KEY`, `ABUSEIPDB_KEY`, `GREYNOISE_KEY`, `OTX_KEY`, `SHODAN_KEY`, `IPINFO_KEY`, `OPENROUTER_KEY`, `OPENROUTER_MODEL`). Environment variables already set take precedence over `.env`.
 
 ## Repository
 

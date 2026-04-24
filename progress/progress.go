@@ -19,6 +19,7 @@ type entry struct {
 	done    bool
 	status  models.Status
 	elapsed time.Duration
+	note    string
 }
 
 // Tracker renders a live per-tool progress display in-place using ANSI escape codes.
@@ -83,12 +84,13 @@ func (t *Tracker) Start(ip string, names []string) {
 }
 
 // Complete marks the tool at idx as finished.
-func (t *Tracker) Complete(idx int, status models.Status, elapsed time.Duration) {
+func (t *Tracker) Complete(idx int, status models.Status, elapsed time.Duration, note string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.tools[idx].done = true
 	t.tools[idx].status = status
 	t.tools[idx].elapsed = elapsed
+	t.tools[idx].note = note
 	t.doneCount++
 	t.redraw()
 }
@@ -111,9 +113,12 @@ func (t *Tracker) DoneAI(elapsed time.Duration) {
 }
 
 // Clear stops the spinner and erases all printed lines from the terminal.
-// Must only be called after Start().
+// Safe to call before Start() or multiple times.
 func (t *Tracker) Clear() {
 	t.clearOnce.Do(func() {
+		if t.startTime.IsZero() {
+			return
+		}
 		close(t.stop)
 		<-t.spinnerDone
 	})
@@ -222,9 +227,13 @@ func (t *Tracker) writeToolDone(e entry) {
 		fmt.Fprintf(t.out, "  %s  %-14s %s\n",
 			color.GreenString("✓"), color.WhiteString(e.name), timeStr)
 	case models.StatusPartial:
+		label := e.note
+		if label == "" {
+			label = "partial"
+		}
 		fmt.Fprintf(t.out, "  %s  %-14s %s  %s\n",
 			color.YellowString("⚠"), color.YellowString(e.name), timeStr,
-			color.YellowString("rate limited"))
+			color.YellowString(label))
 	case models.StatusNoData:
 		fmt.Fprintf(t.out, "  %s  %-14s %s  %s\n",
 			color.New(color.FgHiBlack).Sprint("—"),

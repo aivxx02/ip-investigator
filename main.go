@@ -56,7 +56,7 @@ func main() {
 	go enrichers.RunAllLive(ctx, ip, all, ch)
 	for r := range ch {
 		results[r.Index] = r
-		tracker.Complete(r.Index, r.Status, r.Elapsed)
+		tracker.Complete(r.Index, r.Status, r.Elapsed, r.Note)
 	}
 
 	var aiText string
