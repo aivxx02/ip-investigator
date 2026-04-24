@@ -33,9 +33,9 @@ type Tracker struct {
 	totalLines  int
 	stop        chan struct{}
 	spinnerDone chan struct{}
+	clearOnce   sync.Once
 	aiVisible   bool
 	aiDone      bool
-	aiStart     time.Time
 	aiElapsed   time.Duration
 }
 
@@ -98,7 +98,6 @@ func (t *Tracker) StartAI() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.aiVisible = true
-	t.aiStart = time.Now()
 	t.redraw()
 }
 
@@ -112,9 +111,12 @@ func (t *Tracker) DoneAI(elapsed time.Duration) {
 }
 
 // Clear stops the spinner and erases all printed lines from the terminal.
+// Must only be called after Start().
 func (t *Tracker) Clear() {
-	close(t.stop)
-	<-t.spinnerDone
+	t.clearOnce.Do(func() {
+		close(t.stop)
+		<-t.spinnerDone
+	})
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.totalLines > 0 {

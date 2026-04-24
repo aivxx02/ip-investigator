@@ -9,7 +9,7 @@ import (
 func TestLoadEnvFile(t *testing.T) {
 	dir := t.TempDir()
 	envPath := filepath.Join(dir, ".env")
-	os.WriteFile(envPath, []byte("VIRUSTOTAL_KEY=abc123\nGEMINI_KEY=xyz\n"), 0600)
+	os.WriteFile(envPath, []byte("VIRUSTOTAL_KEY=abc123\nOPENROUTER_KEY=xyz\n"), 0600)
 
 	cfg, err := LoadFrom(envPath)
 	if err != nil {
@@ -18,8 +18,8 @@ func TestLoadEnvFile(t *testing.T) {
 	if cfg.VirusTotalKey != "abc123" {
 		t.Errorf("VirusTotalKey = %q, want abc123", cfg.VirusTotalKey)
 	}
-	if cfg.GeminiKey != "xyz" {
-		t.Errorf("GeminiKey = %q, want xyz", cfg.GeminiKey)
+	if cfg.OpenRouterKey != "xyz" {
+		t.Errorf("OpenRouterKey = %q, want xyz", cfg.OpenRouterKey)
 	}
 }
 

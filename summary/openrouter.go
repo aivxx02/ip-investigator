@@ -13,67 +13,77 @@ import (
 	"ip-investigator/models"
 )
 
-type Gemini struct {
+type OpenRouter struct {
 	Key     string
-	baseURL string        // override in tests
-	timeout time.Duration // override in tests
+	Model   string
+	baseURL string
+	timeout time.Duration
 }
 
-// Summarize sends all enricher results to Gemini and returns the AI assessment text.
-func (g *Gemini) Summarize(ctx context.Context, ip string, results []models.EnrichResult) (string, error) {
-	if g.Key == "" {
-		return "", errors.New("no Gemini API key")
+func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.EnrichResult) (string, error) {
+	if o.Key == "" {
+		return "", errors.New("no OpenRouter API key")
 	}
-	base := g.baseURL
+	base := o.baseURL
 	if base == "" {
-		base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent"
+		base = "https://openrouter.ai/api/v1/chat/completions"
 	}
-	timeout := g.timeout
-	if timeout == 0 {
-		timeout = 30 * time.Second
+	model := o.Model
+	if model == "" {
+		model = "google/gemma-2-9b-it:free"
 	}
 
 	prompt := buildPrompt(ip, results)
 	reqBody, _ := json.Marshal(map[string]any{
-		"contents": []map[string]any{
-			{"parts": []map[string]any{{"text": prompt}}},
+		"model": model,
+		"messages": []map[string]any{
+			{"role": "user", "content": prompt},
 		},
 	})
 
-	url := fmt.Sprintf("%s?key=%s", base, g.Key)
-	client := &http.Client{Timeout: timeout}
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(reqBody))
+	clientTimeout := o.timeout // 0 = rely on context; set in tests only
+	client := &http.Client{Timeout: clientTimeout}
+	req, err := http.NewRequestWithContext(ctx, "POST", base, bytes.NewReader(reqBody))
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Authorization", "Bearer "+o.Key)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("gemini request failed: %w", err)
+		return "", fmt.Errorf("openrouter request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("gemini HTTP %d", resp.StatusCode)
+		var errBody struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		json.NewDecoder(resp.Body).Decode(&errBody)
+		if errBody.Error.Message != "" {
+			return "", fmt.Errorf("openrouter HTTP %d: %s", resp.StatusCode, errBody.Error.Message)
+		}
+		return "", fmt.Errorf("openrouter HTTP %d", resp.StatusCode)
 	}
 
 	var body struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		return "", fmt.Errorf("parse error: %w", err)
 	}
-	if len(body.Candidates) == 0 || len(body.Candidates[0].Content.Parts) == 0 {
-		return "", errors.New("empty response from Gemini")
+	if len(body.Choices) == 0 || body.Choices[0].Message.Content == "" {
+		return "", errors.New("empty response from OpenRouter")
 	}
-	return body.Candidates[0].Content.Parts[0].Text, nil
+
+	return body.Choices[0].Message.Content, nil
 }
 
 func buildPrompt(ip string, results []models.EnrichResult) string {

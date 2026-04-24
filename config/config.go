@@ -15,7 +15,8 @@ type Config struct {
 	OTXKey        string
 	ShodanKey     string
 	IPInfoKey     string
-	GeminiKey     string
+	OpenRouterKey   string
+	OpenRouterModel string
 }
 
 // Load reads .env from the same directory as the running binary.
@@ -46,6 +47,7 @@ func LoadFrom(envPath string) (*Config, error) {
 		OTXKey:        os.Getenv("OTX_KEY"),
 		ShodanKey:     os.Getenv("SHODAN_KEY"),
 		IPInfoKey:     os.Getenv("IPINFO_KEY"),
-		GeminiKey:     os.Getenv("GEMINI_KEY"),
+		OpenRouterKey:   os.Getenv("OPENROUTER_KEY"),
+		OpenRouterModel: os.Getenv("OPENROUTER_MODEL"),
 	}, nil
 }

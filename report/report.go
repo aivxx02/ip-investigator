@@ -166,7 +166,7 @@ func printStatusTable(w io.Writer, results []models.EnrichResult) {
 }
 
 func printAISummary(w io.Writer, summary string) {
-	color.New(color.FgWhite, color.Bold).Fprintln(w, "  AI SUMMARY  (Gemini)")
+	color.New(color.FgWhite, color.Bold).Fprintln(w, "  AI SUMMARY  (OpenRouter)")
 	fmt.Fprintln(w, strings.Repeat("─", 45))
 	if summary == "" {
 		color.New(color.FgHiBlack).Fprintln(w, "  (no summary available)")
