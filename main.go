@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"ip-investigator/config"
@@ -16,14 +19,24 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	ips, err := collectIPs()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		fmt.Fprintln(os.Stderr, "Usage: ip-investigator <ip>")
+		fmt.Fprintln(os.Stderr, "       ip-investigator --file ips.txt")
 		os.Exit(1)
 	}
 
-	ip := os.Args[1]
-	if net.ParseIP(ip) == nil {
-		fmt.Fprintf(os.Stderr, "Error: %q is not a valid IP address\n", ip)
+	var valid []string
+	for _, ip := range ips {
+		if net.ParseIP(ip) == nil {
+			fmt.Fprintf(os.Stderr, "Warning: skipping invalid IP %q\n", ip)
+			continue
+		}
+		valid = append(valid, ip)
+	}
+	if len(valid) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: no valid IPs found")
 		os.Exit(1)
 	}
 
@@ -33,6 +46,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	for i, ip := range valid {
+		runIP(ip, cfg)
+		if i < len(valid)-1 {
+			fmt.Fprintln(os.Stdout, strings.Repeat("─", 60))
+		}
+	}
+}
+
+func runIP(ip string, cfg *config.Config) {
 	all := []enrichers.Enricher{
 		&enrichers.IPInfo{Key: cfg.IPInfoKey},
 		&enrichers.ReverseDNS{},
@@ -66,6 +88,7 @@ func main() {
 		defer aiCancel()
 		aiStart := time.Now()
 		o := &summary.OpenRouter{Key: cfg.OpenRouterKey, Model: cfg.OpenRouterModel}
+		var err error
 		aiText, err = o.Summarize(aiCtx, ip, results)
 		if err != nil {
 			aiText = fmt.Sprintf("(OpenRouter unavailable: %v)", err)
@@ -75,6 +98,59 @@ func main() {
 
 	tracker.Clear()
 	report.Render(os.Stdout, ip, results, aiText)
+}
+
+func collectIPs() ([]string, error) {
+	args := os.Args[1:]
+
+	if len(args) == 0 {
+		return nil, fmt.Errorf("no IP or --file provided")
+	}
+
+	// --file flag
+	if args[0] == "--file" {
+		if len(args) < 2 {
+			return nil, fmt.Errorf("--file requires a path")
+		}
+		path := args[1]
+		ext := strings.ToLower(filepath.Ext(path))
+		if ext != ".txt" && ext != ".md" {
+			return nil, fmt.Errorf("only .txt or .md files are supported")
+		}
+		return readIPsFromFile(path)
+	}
+
+	// multiple bare args
+	if len(args) > 1 {
+		return nil, fmt.Errorf("multiple IPs must be provided via --file")
+	}
+
+	return []string{args[0]}, nil
+}
+
+func readIPsFromFile(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open file: %v", err)
+	}
+	defer f.Close()
+
+	var ips []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		ips = append(ips, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+	if len(ips) == 0 {
+		return nil, fmt.Errorf("no valid IPs found in file")
+	}
+	return ips, nil
 }
 
 func toolNames(all []enrichers.Enricher) []string {

@@ -9,9 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 go build ./...
 go build -o ip-investigator.exe .   # named binary (Windows)
 
-# Run
-./ip-investigator.exe <ip>
+# Run (Windows — builds and runs in one step)
+./run.ps1 8.8.8.8
+./run.ps1 --file ips.txt
+
+# Run (manual)
 ./ip-investigator.exe 8.8.8.8
+./ip-investigator.exe --file ips.txt    # multiple IPs from .txt or .md file
 
 # Test all packages
 go test ./...
@@ -32,12 +36,19 @@ go mod tidy
 
 ## Architecture
 
-The tool queries 9 threat-intel APIs concurrently, renders a live per-tool progress ticker, then shows a colored terminal report with an optional OpenRouter AI summary.
+The tool queries 9 threat-intel APIs concurrently, renders a live per-tool progress ticker, then shows a colored terminal report with an optional OpenRouter AI summary. Supports single IP (arg) or multiple IPs (via `--file`).
 
 **Data flow:**
 ```
-main.go → config.Load() → enrichers.RunAllLive() → progress.Tracker → summary.OpenRouter.Summarize() → report.Render()
+main.go → collectIPs() → config.Load() → loop per IP:
+  runIP() → enrichers.RunAllLive() → progress.Tracker → summary.OpenRouter.Summarize() → report.Render()
 ```
+
+**Input rules:**
+- Single IP: `ip-investigator 8.8.8.8`
+- Multiple IPs: `ip-investigator --file ips.txt` (`.txt` or `.md` only)
+- Multiple bare args → error: use `--file` instead
+- Invalid IPs in file → skipped with warning, valid ones continue
 
 **Package responsibilities:**
 

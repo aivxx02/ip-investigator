@@ -6,10 +6,14 @@ A CLI tool that queries 9 threat intelligence APIs at the same time and prints a
 
 ## What it does
 
-You give it an IP address. It checks 9 security databases simultaneously, shows a live progress ticker while it works, then prints everything in a colored report — plus an AI paragraph summarizing what it all means.
+You give it an IP address (or a file of IPs). It checks 9 security databases simultaneously, shows a live progress ticker while it works, then prints everything in a colored report — plus an AI paragraph summarizing what it all means.
 
 ```
-$ ./ip-investigator.exe 8.8.8.8
+# Single IP
+$ ./run.ps1 8.8.8.8
+
+# Multiple IPs from a file
+$ ./run.ps1 --file ips.txt
 ```
 
 ## How it works
@@ -87,15 +91,25 @@ OPENROUTER_MODEL=google/gemma-2-9b-it:free
 
 All keys are optional — enrichers with missing keys show `✗` in the report and are skipped.
 
-**3. Build**
-```bash
-go build -o ip-investigator.exe .   # Windows
-go build -o ip-investigator .       # Linux/macOS
+**3. Build & Run (Windows — one command)**
+```powershell
+./run.ps1 8.8.8.8
+./run.ps1 --file ips.txt
 ```
 
-**4. Run**
+**Or build manually then run:**
 ```bash
+go build -o ip-investigator.exe .
 ./ip-investigator.exe 1.1.1.1
+./ip-investigator.exe --file ips.txt
+```
+
+**File format for `--file`** (`.txt` or `.md`, one IP per line):
+```
+8.8.8.8
+1.1.1.1
+# this is a comment, ignored
+9.9.9.9
 ```
 
 ## API Keys
