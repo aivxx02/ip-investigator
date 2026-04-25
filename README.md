@@ -20,22 +20,27 @@ $ ./run.ps1 --file ips.txt
 
 ```mermaid
 flowchart TD
-    A([You run: ip-investigator 8.8.8.8]) --> B[Load API keys from .env]
-    B --> C[Start 9 enrichers at the same time]
+    A([You run: run.ps1 8.8.8.8\nor run.ps1 --file ips.txt]) --> B[Collect IPs from arg or file]
+    B --> C[Load API keys from .env]
+    C --> D{More IPs?}
+    D -->|yes| E[Pick next IP]
+    E --> F[Start 9 enrichers at the same time]
 
-    C --> D1[IPInfo]
-    C --> D2[ReverseDNS]
-    C --> D3[WHOIS]
-    C --> D4[VirusTotal]
-    C --> D5[GoogleTI]
-    C --> D6[AbuseIPDB]
-    C --> D7[GreyNoise]
-    C --> D8[OTX]
-    C --> D9[Shodan]
+    F --> G1[IPInfo]
+    F --> G2[ReverseDNS]
+    F --> G3[WHOIS]
+    F --> G4[VirusTotal]
+    F --> G5[GoogleTI]
+    F --> G6[AbuseIPDB]
+    F --> G7[GreyNoise]
+    F --> G8[OTX]
+    F --> G9[Shodan]
 
-    D1 & D2 & D3 & D4 & D5 & D6 & D7 & D8 & D9 --> E[Live progress ticker updates as each one finishes]
-    E --> F[OpenRouter AI reads all results and writes a summary]
-    F --> G([Colored report printed to terminal])
+    G1 & G2 & G3 & G4 & G5 & G6 & G7 & G8 & G9 --> H[Live progress ticker updates as each one finishes]
+    H --> I[OpenRouter AI reads all results and writes a summary]
+    I --> J([Colored report printed to terminal])
+    J --> D
+    D -->|no more| K([Done])
 ```
 
 ## The 9 Sources
