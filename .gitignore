@@ -1,2 +1,4 @@
 .env
 *.exe
+.superpowers/
+docs/
