@@ -30,7 +30,7 @@ func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.
 	}
 	model := o.Model
 	if model == "" {
-		model = "google/gemma-2-9b-it:free"
+		return "", errors.New("OPENROUTER_MODEL not set")
 	}
 
 	prompt := buildPrompt(ip, results)
