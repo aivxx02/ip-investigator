@@ -104,25 +104,25 @@ func collectIPs() ([]string, error) {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		return nil, fmt.Errorf("no IP or --file provided")
+		return nil, fmt.Errorf("Please provide an IP address or use --file to provide a list of IPs")
 	}
 
 	// --file flag
 	if args[0] == "--file" {
 		if len(args) < 2 {
-			return nil, fmt.Errorf("--file requires a path")
+			return nil, fmt.Errorf("Please provide a file path after --file (example: --file ips.txt)")
 		}
 		path := args[1]
 		ext := strings.ToLower(filepath.Ext(path))
 		if ext != ".txt" && ext != ".md" {
-			return nil, fmt.Errorf("only .txt or .md files are supported")
+			return nil, fmt.Errorf("Only .txt or .md files are supported. Please convert your file and try again")
 		}
 		return readIPsFromFile(path)
 	}
 
 	// multiple bare args
 	if len(args) > 1 {
-		return nil, fmt.Errorf("multiple IPs must be provided via --file")
+		return nil, fmt.Errorf("To scan multiple IPs, save them in a .txt file and use --file instead")
 	}
 
 	return []string{args[0]}, nil
@@ -131,7 +131,7 @@ func collectIPs() ([]string, error) {
 func readIPsFromFile(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open file: %v", err)
+		return nil, fmt.Errorf("Could not open the file. Please check the path and try again")
 	}
 	defer f.Close()
 
@@ -145,10 +145,10 @@ func readIPsFromFile(path string) ([]string, error) {
 		ips = append(ips, line)
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading file: %v", err)
+		return nil, fmt.Errorf("Something went wrong while reading the file. Make sure it is not corrupted")
 	}
 	if len(ips) == 0 {
-		return nil, fmt.Errorf("no valid IPs found in file")
+		return nil, fmt.Errorf("No valid IP addresses were found in the file. Please check the contents and try again")
 	}
 	return ips, nil
 }

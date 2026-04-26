@@ -22,7 +22,7 @@ type OpenRouter struct {
 
 func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.EnrichResult) (string, error) {
 	if o.Key == "" {
-		return "", errors.New("no OpenRouter API key")
+		return "", errors.New("OpenRouter API key is missing. Add OPENROUTER_KEY to your .env file")
 	}
 	base := o.baseURL
 	if base == "" {
@@ -30,7 +30,7 @@ func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.
 	}
 	model := o.Model
 	if model == "" {
-		return "", errors.New("OPENROUTER_MODEL not set")
+		return "", errors.New("No AI model selected. Add OPENROUTER_MODEL to your .env file")
 	}
 
 	prompt := buildPrompt(ip, results)
@@ -52,7 +52,7 @@ func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("openrouter request failed: %w", err)
+		return "", fmt.Errorf("Could not reach OpenRouter. Check your internet connection and try again: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -64,9 +64,9 @@ func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.
 		}
 		json.NewDecoder(resp.Body).Decode(&errBody)
 		if errBody.Error.Message != "" {
-			return "", fmt.Errorf("openrouter HTTP %d: %s", resp.StatusCode, errBody.Error.Message)
+			return "", fmt.Errorf("OpenRouter rejected the request: %s. Check your API key and model ID", errBody.Error.Message)
 		}
-		return "", fmt.Errorf("openrouter HTTP %d", resp.StatusCode)
+		return "", fmt.Errorf("OpenRouter rejected the request. Check your API key and model ID in your .env file")
 	}
 
 	var body struct {
@@ -77,10 +77,10 @@ func (o *OpenRouter) Summarize(ctx context.Context, ip string, results []models.
 		} `json:"choices"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return "", fmt.Errorf("parse error: %w", err)
+		return "", fmt.Errorf("Received an unreadable response from OpenRouter. Please try again: %w", err)
 	}
 	if len(body.Choices) == 0 || body.Choices[0].Message.Content == "" {
-		return "", errors.New("empty response from OpenRouter")
+		return "", errors.New("OpenRouter returned an empty response. Please try again")
 	}
 
 	return body.Choices[0].Message.Content, nil

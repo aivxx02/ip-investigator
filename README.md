@@ -91,7 +91,7 @@ GREYNOISE_KEY=your_key_here
 OTX_KEY=your_key_here
 SHODAN_KEY=your_key_here
 OPENROUTER_KEY=your_key_here
-OPENROUTER_MODEL=google/gemma-2-9b-it:free
+OPENROUTER_MODEL=your_model_id_here
 ```
 
 All keys are optional — enrichers with missing keys show `✗` in the report and are skipped.

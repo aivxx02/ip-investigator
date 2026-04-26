@@ -58,7 +58,7 @@ main.go → collectIPs() → config.Load() → loop per IP:
 
 - `enrichers/` — one file per API source. All implement `Enricher` interface (`Name() string`, `Enrich(ctx, ip) EnrichResult`). Two runners in `enricher.go`: `RunAll()` returns results in original order (used by tests); `RunAllLive()` streams results to a channel as each enricher finishes (sets `Index` and `Elapsed` on each result, closes channel when done — used by `main.go`). HTTP-based enrichers have unexported `baseURL` and `timeout` fields for test injection (use `httptest.NewServer` — no real HTTP calls in tests).
 
-- `summary/` — calls OpenRouter REST API (`openrouter.ai/api/v1/chat/completions`, no SDK). Builds a structured prompt that includes each enricher's status icon so the AI can acknowledge data gaps in its assessment. Model defaults to `google/gemma-2-9b-it:free`; override with `OPENROUTER_MODEL`.
+- `summary/` — calls OpenRouter REST API (`openrouter.ai/api/v1/chat/completions`, no SDK). Builds a structured prompt that includes each enricher's status icon so the AI can acknowledge data gaps in its assessment. Model is set via `OPENROUTER_MODEL` (required — no default; set it to whichever model you want to use).
 
 - `progress/` — live per-tool progress display using raw ANSI escape codes (no extra deps). `Tracker` methods: `Start(ip, names)`, `Complete(idx, status, elapsed, note)`, `StartAI()`, `DoneAI(elapsed)`, `Clear()`. `Clear()` is idempotent (safe to call multiple times or before `Start()`). Spinner goroutine runs at 80 ms tick; stopped via `stop` channel with `sync.Once`.
 
