@@ -97,7 +97,7 @@ GitHub: https://github.com/aivxx02/ip-investigator.git
 
 ```bash
 # Git
-git add .
+git add <file1> <file2>
 git commit -m "message"
 git push
 ```
